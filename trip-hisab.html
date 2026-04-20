@@ -27,7 +27,6 @@ h1 {
   text-align: center;
   color: white;
   margin-bottom: 15px;
-  font-size: 22px;
 }
 
 .card {
@@ -38,18 +37,12 @@ h1 {
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-h2 {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
 input, select {
   width: 100%;
   padding: 12px;
   margin: 6px 0;
   border-radius: 8px;
   border: 1px solid #ccc;
-  font-size: 14px;
 }
 
 button {
@@ -59,13 +52,7 @@ button {
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 15px;
   font-weight: bold;
-  margin-top: 8px;
-}
-
-button:active {
-  transform: scale(0.98);
 }
 
 ul li {
@@ -73,13 +60,10 @@ ul li {
   margin: 5px 0;
   padding: 10px;
   border-radius: 6px;
-  font-size: 14px;
 }
 
 .checkboxes label {
   display: block;
-  padding: 5px 0;
-  font-size: 14px;
 }
 
 .result {
@@ -87,26 +71,27 @@ ul li {
   color: #00ff9d;
   padding: 12px;
   border-radius: 10px;
-  font-size: 14px;
   white-space: pre-line;
-  line-height: 1.5;
 }
 
 .total {
-  font-size: 16px;
   font-weight: bold;
   margin-bottom: 8px;
 }
 
-@media (max-width: 400px) {
-  h1 {
-    font-size: 18px;
-  }
-
-  input, select, button {
-    font-size: 13px;
-    padding: 10px;
-  }
+/* Floating Button */
+.reset-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 14px 16px;
+  border-radius: 50%;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  cursor: pointer;
 }
 
 </style>
@@ -119,14 +104,14 @@ ul li {
 <h1>💸 Trip Kharcha</h1>
 
 <div class="card">
-  <h2>👥 Members</h2>
+  <h3>👥 Members</h3>
   <input type="text" id="name" placeholder="Naam likho">
   <button onclick="addMember()">+ Add</button>
   <ul id="members"></ul>
 </div>
 
 <div class="card">
-  <h2>🧾 Kharcha</h2>
+  <h3>🧾 Kharcha</h3>
 
   <input type="text" id="title" placeholder="Kis pe kharcha hua">
   <input type="number" id="amount" placeholder="Amount ₹">
@@ -139,16 +124,26 @@ ul li {
 </div>
 
 <div class="card">
-  <h2>📊 Summary</h2>
+  <h3>📊 Summary</h3>
   <div class="total" id="total">Total: ₹0</div>
   <div class="result" id="result">Abhi kuch add nahi hua...</div>
 </div>
 
 </div>
 
+<button class="reset-btn" onclick="resetData()">🗑</button>
+
 <script>
-let members = [];
-let expenses = [];
+let members = JSON.parse(localStorage.getItem("members")) || [];
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+
+updateUI();
+calculate();
+
+function saveData() {
+  localStorage.setItem("members", JSON.stringify(members));
+  localStorage.setItem("expenses", JSON.stringify(expenses));
+}
 
 function addMember() {
   let name = document.getElementById("name").value.trim();
@@ -156,6 +151,7 @@ function addMember() {
 
   members.push(name);
   document.getElementById("name").value = "";
+  saveData();
   updateUI();
 }
 
@@ -195,6 +191,7 @@ function addExpense() {
   document.getElementById("title").value = "";
   document.getElementById("amount").value = "";
 
+  saveData();
   calculate();
 }
 
@@ -206,10 +203,7 @@ function calculate() {
     total += e.amount;
     let share = e.amount / e.split.length;
 
-    e.split.forEach(i => {
-      balance[i] -= share;
-    });
-
+    e.split.forEach(i => balance[i] -= share);
     balance[e.payer] += e.amount;
   });
 
@@ -217,15 +211,15 @@ function calculate() {
 
   let result = "";
 
-  for (let i = 0; i < members.length; i++) {
+  members.forEach((m, i) => {
     if (balance[i] > 0) {
-      result += `🟢 ${members[i]} ko ₹${balance[i].toFixed(2)} milna hai\n`;
+      result += `🟢 ${m} ko ₹${balance[i].toFixed(2)} milna hai\n`;
     } else if (balance[i] < 0) {
-      result += `🔴 ${members[i]} ko ₹${Math.abs(balance[i]).toFixed(2)} dena hai\n`;
+      result += `🔴 ${m} ko ₹${Math.abs(balance[i]).toFixed(2)} dena hai\n`;
     } else {
-      result += `⚖️ ${members[i]} settled hai\n`;
+      result += `⚖️ ${m} settled hai\n`;
     }
-  }
+  });
 
   result += "\n--- Details ---\n";
 
@@ -234,6 +228,16 @@ function calculate() {
   });
 
   document.getElementById("result").innerText = result;
+}
+
+function resetData() {
+  if (confirm("Sab data delete karna hai?")) {
+    members = [];
+    expenses = [];
+    saveData();
+    updateUI();
+    calculate();
+  }
 }
 </script>
 
