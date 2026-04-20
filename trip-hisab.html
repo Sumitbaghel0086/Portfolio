@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Kharcha Splitter</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  padding: 10px;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+}
+
+h1 {
+  text-align: center;
+  color: white;
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+h2 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #4facfe;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+ul li {
+  background: #f1f5f9;
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.checkboxes label {
+  display: block;
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+.result {
+  background: #111;
+  color: #00ff9d;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
+.total {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 400px) {
+  h1 {
+    font-size: 18px;
+  }
+
+  input, select, button {
+    font-size: 13px;
+    padding: 10px;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>💸 Trip Kharcha</h1>
+
+<div class="card">
+  <h2>👥 Members</h2>
+  <input type="text" id="name" placeholder="Naam likho">
+  <button onclick="addMember()">+ Add</button>
+  <ul id="members"></ul>
+</div>
+
+<div class="card">
+  <h2>🧾 Kharcha</h2>
+
+  <input type="text" id="title" placeholder="Kis pe kharcha hua">
+  <input type="number" id="amount" placeholder="Amount ₹">
+
+  <select id="payer"></select>
+
+  <div class="checkboxes" id="checkboxes"></div>
+
+  <button onclick="addExpense()">+ Add Kharcha</button>
+</div>
+
+<div class="card">
+  <h2>📊 Summary</h2>
+  <div class="total" id="total">Total: ₹0</div>
+  <div class="result" id="result">Abhi kuch add nahi hua...</div>
+</div>
+
+</div>
+
+<script>
+let members = [];
+let expenses = [];
+
+function addMember() {
+  let name = document.getElementById("name").value.trim();
+  if (!name) return;
+
+  members.push(name);
+  document.getElementById("name").value = "";
+  updateUI();
+}
+
+function updateUI() {
+  let list = document.getElementById("members");
+  let payer = document.getElementById("payer");
+  let checkboxes = document.getElementById("checkboxes");
+
+  list.innerHTML = "";
+  payer.innerHTML = "";
+  checkboxes.innerHTML = "";
+
+  members.forEach((m, i) => {
+    list.innerHTML += `<li>👤 ${m}</li>`;
+    payer.innerHTML += `<option value="${i}">${m} ne pay kiya</option>`;
+    checkboxes.innerHTML += `
+      <label>
+        <input type="checkbox" value="${i}" checked> ${m}
+      </label>`;
+  });
+}
+
+function addExpense() {
+  let title = document.getElementById("title").value;
+  let amount = parseFloat(document.getElementById("amount").value);
+  let payer = parseInt(document.getElementById("payer").value);
+
+  let selected = [];
+  document.querySelectorAll("#checkboxes input:checked").forEach(cb => {
+    selected.push(parseInt(cb.value));
+  });
+
+  if (!title || !amount || selected.length === 0) return;
+
+  expenses.push({ title, amount, payer, split: selected });
+
+  document.getElementById("title").value = "";
+  document.getElementById("amount").value = "";
+
+  calculate();
+}
+
+function calculate() {
+  let balance = Array(members.length).fill(0);
+  let total = 0;
+
+  expenses.forEach(e => {
+    total += e.amount;
+    let share = e.amount / e.split.length;
+
+    e.split.forEach(i => {
+      balance[i] -= share;
+    });
+
+    balance[e.payer] += e.amount;
+  });
+
+  document.getElementById("total").innerText = `Total: ₹${total}`;
+
+  let result = "";
+
+  for (let i = 0; i < members.length; i++) {
+    if (balance[i] > 0) {
+      result += `🟢 ${members[i]} ko ₹${balance[i].toFixed(2)} milna hai\n`;
+    } else if (balance[i] < 0) {
+      result += `🔴 ${members[i]} ko ₹${Math.abs(balance[i]).toFixed(2)} dena hai\n`;
+    } else {
+      result += `⚖️ ${members[i]} settled hai\n`;
+    }
+  }
+
+  result += "\n--- Details ---\n";
+
+  expenses.forEach(e => {
+    result += `• ${e.title} - ₹${e.amount}\n`;
+  });
+
+  document.getElementById("result").innerText = result;
+}
+</script>
+
+</body>
+</html>
