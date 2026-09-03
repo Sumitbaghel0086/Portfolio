@@ -18,6 +18,8 @@
     --gold:#D9A441;
     --line:#DCCFB0;
     --muted:#6B6552;
+    --green:#2E7D32;
+    --red:#C0392B;
   }
   *{box-sizing:border-box;}
   body{
@@ -258,7 +260,9 @@
   }
   .start-card button.primary{ width:100%; padding:13px 18px; font-size:16px; }
   .start-lang{
-    margin-top:22px;
+    display:flex;
+    justify-content:center;
+    margin-bottom:22px;
   }
 
   /* Expense list */
@@ -273,16 +277,21 @@
   .expense:last-child{ border-bottom:none; }
   .expense .desc{ font-weight:600; font-size:15px; }
   .expense .meta{ color:var(--muted); font-size:13px; margin-top:3px; }
+  .expense .meta-time{ color:var(--muted); font-size:12px; opacity:0.85; }
   .expense .amt{ font-family:'Fraunces', serif; font-weight:600; font-size:17px; white-space:nowrap; }
   .expense .icon-btn{
-    background:none; border:none; color:var(--muted); cursor:pointer;
-    font-size:17px; padding:6px; line-height:1;
+    width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    border:none; border-radius:6px; cursor:pointer;
+    font-size:18px; color:#fff; flex-shrink:0;
     -webkit-tap-highlight-color:transparent;
+    transition:filter .15s;
   }
-  .expense .icon-btn.edit:hover{ color:var(--teal); }
-  .expense .icon-btn.del:hover{ color:var(--rust); }
+  .expense .icon-btn.edit{ background:var(--green); }
+  .expense .icon-btn.del{ background:var(--red); }
+  .expense .icon-btn:active{ filter:brightness(0.9); }
   .expense-left{ flex:1; }
-  .expense-actions{ display:flex; align-items:center; gap:0; }
+  .expense-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
 
   /* Summary */
   .total-line{
@@ -324,16 +333,47 @@
   .top-actions{
     display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:10px;
   }
-  button.reset-btn, button.lang-btn{
-    background:none; border:1.5px dashed var(--rust-dark);
-    color:var(--rust-dark); font-family:'Space Grotesk', sans-serif;
-    font-size:13px; padding:7px 14px; border-radius:999px; cursor:pointer;
+  .lang-switch{
+    display:flex; align-items:center; gap:9px;
+    user-select:none;
+  }
+  .lang-switch-label{
+    font-size:13px; color:var(--muted); font-weight:500; cursor:pointer;
+    transition:color .15s, font-weight .15s;
+  }
+  .lang-switch-label.active{ color:var(--ink); font-weight:700; }
+  .switch{ position:relative; display:inline-block; width:42px; height:23px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; position:absolute; }
+  .switch .slider{
+    position:absolute; inset:0; cursor:pointer;
+    background:var(--teal); border-radius:999px; transition:background .2s;
+  }
+  .switch .slider:before{
+    content:""; position:absolute; height:17px; width:17px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:transform .2s;
+    box-shadow:0 1px 2px rgba(0,0,0,0.25);
+  }
+  .switch input:checked + .slider{ background:var(--rust); }
+  .switch input:checked + .slider:before{ transform:translateX(19px); }
+
+  .danger-zone{ margin-top:26px; }
+  button.reset-btn{
+    display:block;
+    width:100%;
+    background:#C0392B;
+    color:#fff;
+    border:none;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    padding:14px 18px;
+    border-radius:10px;
+    cursor:pointer;
     -webkit-tap-highlight-color:transparent;
+    transition:background .15s;
   }
-  button.lang-btn{
-    border-style:solid; border-color:var(--teal); color:var(--teal); font-weight:600;
-  }
-  button.reset-btn:active, button.lang-btn:active{ background:rgba(184,84,42,0.1); }
+  button.reset-btn:hover{ background:#A5301F; }
+  button.reset-btn:active{ background:#8F2A1B; }
 
   /* Mobile-first tweaks */
   @media (max-width: 480px){
@@ -360,14 +400,21 @@
 <!-- Start screen: enter trip name before entering the app -->
 <div class="start-screen" id="startScreen">
   <div class="start-card">
+    <div class="start-lang">
+      <span class="lang-switch">
+        <span class="lang-switch-label" id="startLabelHi" onclick="setLanguage('hi')">हिंदी</span>
+        <span class="switch">
+          <input type="checkbox" id="startLangCheckbox" onchange="setLanguage(this.checked ? 'en' : 'hi')">
+          <span class="slider"></span>
+        </span>
+        <span class="lang-switch-label" id="startLabelEn" onclick="setLanguage('en')">English</span>
+      </span>
+    </div>
     <span class="tag" data-i18n="startTag">✈ ट्रिप का हिसाब रखो, आसानी से</span>
     <h1 data-i18n="startTitle">अपनी ट्रिप का नाम रखो</h1>
     <p data-i18n="startSub">यह नाम मुख्य स्क्रीन पर ऊपर दिखेगा — बाद में भी बदल सकते हो</p>
     <input type="text" id="startTripName" data-i18n-placeholder="startPlaceholder" placeholder="जैसे: गोवा ट्रिप 2026" maxlength="60">
     <button class="primary" onclick="startTrip()" data-i18n="startBtn">शुरू करें</button>
-    <div class="start-lang">
-      <button class="lang-btn" id="startLangBtn" onclick="toggleLanguage()">EN</button>
-    </div>
   </div>
 </div>
 
@@ -380,8 +427,14 @@
   </header>
 
   <div class="top-actions">
-    <button class="reset-btn" onclick="resetAll()" data-i18n="resetBtn">↺ सब कुछ रीसेट करें</button>
-    <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()">EN</button>
+    <span class="lang-switch">
+      <span class="lang-switch-label" id="labelHi" onclick="setLanguage('hi')">हिंदी</span>
+      <span class="switch">
+        <input type="checkbox" id="langCheckbox" onchange="setLanguage(this.checked ? 'en' : 'hi')">
+        <span class="slider"></span>
+      </span>
+      <span class="lang-switch-label" id="labelEn" onclick="setLanguage('en')">English</span>
+    </span>
   </div>
 
   <!-- Friends -->
@@ -439,7 +492,11 @@
     </div>
   </section>
 
-  <footer data-i18n="footer">आपका डेटा इसी फ़ोन/ब्राउज़र में सेव रहता है — पेज रीलोड करने पर भी नहीं मिटेगा, सिर्फ ऊपर वाले रीसेट बटन से मिटेगा</footer>
+  <footer data-i18n="footer">आपका डेटा इसी फ़ोन/ब्राउज़र में सेव रहता है — पेज रीलोड करने पर भी नहीं मिटेगा, सिर्फ नीचे वाले रीसेट बटन से मिटेगा</footer>
+
+  <div class="danger-zone">
+    <button class="reset-btn" onclick="resetAll()" data-i18n="resetBtn">↺ सब कुछ रीसेट करें</button>
+  </div>
 </div>
 
 <!-- Edit expense popup -->
@@ -501,7 +558,7 @@ const translations = {
     summaryTitle: 'कुल हिसाब',
     totalLabel: 'कुल खर्चा',
     settleTitle: 'किसको किसे कितना देना है',
-    footer: 'आपका डेटा इसी फ़ोन/ब्राउज़र में सेव रहता है — पेज रीलोड करने पर भी नहीं मिटेगा, सिर्फ ऊपर वाले रीसेट बटन से मिटेगा',
+    footer: 'आपका डेटा इसी फ़ोन/ब्राउज़र में सेव रहता है — पेज रीलोड करने पर भी नहीं मिटेगा, सिर्फ नीचे वाले रीसेट बटन से मिटेगा',
     editModalTitle: 'खर्चा एडिट करें',
     saveBtn: 'सेव करें',
     cancelBtn: 'रद्द करें',
@@ -554,7 +611,7 @@ const translations = {
     summaryTitle: 'Overall summary',
     totalLabel: 'Total spent',
     settleTitle: 'Who owes whom',
-    footer: 'Your data is saved on this phone/browser — it survives a page reload, and only clears when you tap Reset above',
+    footer: 'Your data is saved on this phone/browser — it survives a page reload, and only clears when you tap Reset below',
     editModalTitle: 'Edit expense',
     saveBtn: 'Save',
     cancelBtn: 'Cancel',
@@ -630,12 +687,18 @@ function applyStaticText(){
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
   });
-  document.getElementById('langToggleBtn').textContent = t('langLabel');
-  document.getElementById('startLangBtn').textContent = t('langLabel');
+  const isEn = currentLang === 'en';
+  document.getElementById('langCheckbox').checked = isEn;
+  document.getElementById('startLangCheckbox').checked = isEn;
+  document.getElementById('labelHi').classList.toggle('active', !isEn);
+  document.getElementById('labelEn').classList.toggle('active', isEn);
+  document.getElementById('startLabelHi').classList.toggle('active', !isEn);
+  document.getElementById('startLabelEn').classList.toggle('active', isEn);
 }
 
-function toggleLanguage(){
-  currentLang = currentLang === 'hi' ? 'en' : 'hi';
+function setLanguage(lang){
+  if(lang !== 'hi' && lang !== 'en') return;
+  currentLang = lang;
   applyStaticText();
   renderFriends();
   renderPaidBySelect();
@@ -772,7 +835,8 @@ function addExpense(){
     desc,
     amount,
     paidBy,
-    splitAmong: Array.from(selectedSplit)
+    splitAmong: Array.from(selectedSplit),
+    createdAt: new Date().toISOString()
   });
   document.getElementById('expDesc').value = '';
   document.getElementById('expAmount').value = '';
@@ -902,7 +966,7 @@ function renderExpenses(){
     <div class="expense">
       <div class="expense-left">
         <div class="desc">${escapeHtml(e.desc)}</div>
-        <div class="meta">${escapeHtml(t('paidByMeta')(friendName(e.paidBy), e.splitAmong.length, e.splitAmong.map(id => friendName(id)).join(', ')))}</div>
+        <div class="meta">${escapeHtml(t('paidByMeta')(friendName(e.paidBy), e.splitAmong.length, e.splitAmong.map(id => friendName(id)).join(', ')))}${e.createdAt ? `<br><span class="meta-time">${escapeHtml(formatDateTime(e.createdAt))}</span>` : ''}</div>
       </div>
       <div class="expense-actions">
         <div class="amt">₹${formatNum(e.amount)}</div>
@@ -997,6 +1061,15 @@ function renderSummary(){
 
 function formatNum(n){
   return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function formatDateTime(iso){
+  if(!iso) return '';
+  try{
+    const d = new Date(iso);
+    const locale = currentLang === 'hi' ? 'hi-IN' : 'en-IN';
+    return d.toLocaleString(locale, { day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true });
+  }catch(e){ return ''; }
 }
 
 function escapeHtml(str){
